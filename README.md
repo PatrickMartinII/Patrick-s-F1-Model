@@ -1,2 +1,53 @@
-## Predicting Formula One Race Outcomes 
-A continuation of the Erdos Institute Data Science Boot Camp project [(https://github.com/Merlin117/erdos_ds_f1)]. 
+# Predicting Formula One Race Outcomes 
+A continuation of the Erdos Institute Data Science Boot Camp project https://github.com/Merlin117/erdos_ds_f1. 
+
+# Table of Contents
+1. [Introduction](#Introduction)
+2. [Previous Results](#Previous-Results)
+3. [Changes to the Model](#Changes-to-the-Model)
+4. [Model Features](#Model-Features)
+
+## Introduction
+Formula One races are exciting and many people come from all over in order to witness the high-speed stakes on the racet track! Our goal in the summer boot camp was to try quantify what 'excitment' could mean for a formula one race, and then use the recorded data from past races to try and come up with a model for predicting this excitement value. This information could be valuable to stakeholders in the formula one world: knowing which races could be exciting or not can lead to better marketing strategies, and can also give significant insights to each team and their drivers on what to expect from a race. 
+
+The first inclination was to try and predict the number of overtakes in a race; more overtakes = more exciting races, right? However, we quickly found some simple counterexamples to this idea. For the rest of our discussion, we consider a permutation $\sigma$ to be a finishing grid where each number in the permutation represents the position of that driver in the starting grid of a race. Now consider the two permutations (finishing positions of a race) $\omega = 15234$ and $\tau = 13524$. Both have the same number of overtakes: in $\omega$ the driver in fifth position overtook the drivers in second, third, and fourth, while in $\tau$ the driver in third overtook the driver in second, while the driver in fifth overtook the drivers in second and fourth. Yet, the race $\omega$ is clearly not as exciting as the race $\tau$, since only one driver made progress while the rest of the drivers maintained their *local positions*. This lead us to the conclusion that simply using the number of overtakes may not lead to a good metric for measuring the excitement of a race. We needed something that would best account for the way positions were changing both globally and locally. 
+
+This leads us to define the Average Local Position Change (ALPC) of a race with finishing positions $\sigma$:
+
+$$ALPC(\sigma)=\frac{1}{N(N-1)}\sum_{i=1}^N\sum_{j\neq i} |(i-j)-(\sigma^{-1}(i)-\sigma^{-1}(j))|,$$
+
+where $N$ is the number of drivers that finish the race. This metric looks at what we call the *local position change* of each driver and then averages this value out. The local position change of each driver is given by the inner sum divided by one less than the number of finsihing drivers. Then the ALPC is achieved by averaging out the local position change across all finshing drivers. Notice that the local position change of a driver avoids the issue that we ran into with the number of overtakes. The value $(i-j)-(\sigma^{-1}(i)-\sigma^{-1}(j)) = 0$ if and only if the two racers which started out in positions $i$ and $j$, respectively, are the same positions away from each other in the finsihing grid. We do allow for negative values since if the two racers in positions $i$ and $j$ end up in positions $j$ and $i$, we don't want this to add a value of 0. This new metric does exactly what we want and distinguishes between the two finishing positions $\omega$ and $\tau$ since $ALPC(\omega)=1.8$ while $ALPC(\tau)=2$, and gives to them the appropriate values which we would expect since $\omega$ is not as exciting as $\tau$. Also notice that $ALPC=0$ only if the starting grid is the same as the finishing grid (i.e. there are no overtakes), just as desired. 
+
+Previously, we had the absolute value bars outside the inner sum instead of inside. The motivation behind this change is that inclusing the absolute value bars inside the sum better captures how much the grid is changing, while also yielding better correlation with the chosen features. Potential issues with this metric, is that it automtically excludes DNFs and that it heavily relies on how many drivers finish the race.
+
+The goal now is to improve upon the existing model by:
+1. adding more features
+2. combining features to yield the optimal model
+3. testing different types of models and tuning hyperparameters to see which one yields the best results
+
+## Previous Results
+The previous model ws able predict with an $r^2\approx 0.13$ and a $MSE\approx 0.86$. We used only linear regression with this model. We also noticed a strong correlation between the number of DNFs and ALPC (as seen below), which makes sense since DNFs are automatically excluded whencomputing ALPC. One would also expect that the more DNFs there are, the less drivers will finish the race heavily lowering the possible ALPC value. 
+
+![image](https://github.com/user-attachments/assets/a11d6c8d-bec0-44cf-a9c5-d2a3091f9781)
+
+## Changes to the Model
+One of the downfalls of the previous model was that it only used two features, making it an overly simplistic model. The features chosen also had very small correlation coefficients, meaning that the features did not have add very strong predictive power to the model. We also found out too late how much the number of DNFs impacted the target. 
+
+Here we begin by exploring more possible features for prediction, and then implement a better process for feature selection, only allowing for features which improve the predictive power of the model. We also want to create two models: one to predict the number of DNFs in a race, and then another to predict the ALPC of a race. We will use the predicted values from the DNF model as a feature for the ALPC model. We also explore how different modeling approaches will habdle the data and then choose the approach which will yield the best predictive power. 
+
+## Model Features
+Below we list out the chosen features for our model and then give an in depth survey for each:
+
+1. Average Driver Experience on the track (weighted sum)
+2. Average Pit Stop Lap, Number, and Time (weighted sum)
+3. Pre Race Free Practice and Qualifying ALPC (weighted sum)
+4. Total Cumulative Constructor Average Points Earned
+5. Time Gap Clustering (weighted sum)
+6. Time Gap Statistics (weighted sum)
+7. Weather Rain Data
+8. Top Ten Diversity
+9. Circuit Id
+10. Counry of the Race
+
+### Average Driver Experience on the track
+This feature consists of three subfeatures which are then given weights which optimize their sum for correlation: (1) the average driver race count (ADRC), the average cumulative raver points (ACRP), and the average driver experience in years (ADEY).
