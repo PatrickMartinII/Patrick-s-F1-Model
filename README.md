@@ -74,7 +74,7 @@ To choose the best time gap interval number, we plotted the time gap against the
 ![image](https://github.com/user-attachments/assets/ea4de4df-9de8-45e5-a8b0-a10f3f48a5e2)
 ![image](https://github.com/user-attachments/assets/e492911c-0b86-4d7b-bc7e-1646a6fd5d59)
 
-For the free practice grid we have $\text{time gap ALPC} = 200$ and $\text{time gap DNFs} = 220$. Then, surprisingly, for the qualifying grid we have $\text{time gap ALPC} = 7780$ while $\text{time gap DNFs} = 140$. Finally, for the absolute pace position grid we have $\text{time gap ALPC} = 360$ and $\text{time gap DNFs} = 380$. These are the time gaps which maximize the correlation values, respectively, for each grid. 
+For the free practice grid we have $I_{ALPC} = 200$ and $I_{DNF} = 220$. Then, surprisingly, for the qualifying grid we have $I_{ALPC} = 7780$ while $I_{DNF} = 140$. Finally, for the absolute pace position grid we have $I_{ALPC} = 360$ and $I_{DNF} = 380$. These are the time gaps which maximize the correlation values, respectively, for each grid. 
 
 We used `Optimizing Weighted Sum for Correlation.ipynb` to get the following weights $-2.41387716\cdot FTGCSM-0.90292397\cdot QTGCSM-0.22131765\cdot paceTGCSM$. Alone each subfeature has a correlation of $<.4$ to the total number of DNFs but the weighted sum has a correlation value of $0.40078546908089274$ to the total number of DNFs. Again, the improvement is only marginal, but it still adds to the total predictive power of the model.
 
