@@ -62,11 +62,21 @@ There are six subfeatures, two for each of the free practice (FP), qualifiying (
 The total cumulative constructor average points earned (TCCAPE) is computed by first calculating the total number of points that a constructor has earned through all their drivers in the current season up to but not including the current race, then for each race the TCCAPE is gotten by averaging out that value over all constructors participating in the current race. The TCCAPE exhibits a correlation value of $-0.513920$ to the number of DNFs in a race. 
 
 ### Time Gap Cluster Square Mean
-This feature is obtained by getting what we call the *time clusters* for each of the free practice (F), qualifying (Q), and absolute pace position (pace) grids. To find the time cluster of a grid, we must first choose a *time interval number* in milliseconds, $I$. This number is then applied to each driver by taking their time in each grid and lumping in all drivers who have a time within $I$ milliseconds of the driver. This creates some number of clusters of drivers who all are within $I$ milliseconds of at least one driver in the cluster. If there are $M$ clusters labeled $C_i$ for $1\leq i\leq M$, then we can compute the Time Gap Cluster Square Mean (TGCSM) with the following formula: 
+This feature is obtained by getting what we call the *time clusters* for each of the free practice (F), qualifying (Q), and absolute pace position (pace) grids. To find the time cluster of a grid, we must first choose a *time gap interval number* in milliseconds, $I$. This number is then applied to each driver by taking their time in each grid and lumping in all drivers who have a time within $I$ milliseconds of the driver. This creates some number of clusters of drivers who all are within $I$ milliseconds of at least one driver in the cluster. If there are $M$ clusters labeled $C_i$ for $1\leq i\leq M$, then we can compute the Time Gap Cluster Square Mean (TGCSM) with the following formula: 
 
 $$TGCSM = \frac{\sum_{i=1}^M |C_i|^2-N}{N(N-1)},$$
 
-where $TGCSM=0$ if $N=1$. The choice of square mean over regular mean was done to somewhat normalize the value, and then the choice to subtract $N$ from the top and bottom of the fraction was done to place values between $0$ and $1$. If $D\neq 1$ then $TGCSM=0$ if $M=N$ and $TGCSM=1$ if $M=1$. In otherwords, TGCSM measures how 'close' the drivers are expected to be when finishing the race. We used `Optimizing Weighted Sum for Correlation.ipynb` to get the following weights $-2.41387716\cdot FTGCSM-0.90292397\cdot QTGCSM-0.22131765\cdot paceTGCSM$. Alone each subfeature has a correlation of $<.4$ to the total number of DNFs but the weighted sum has a correlation value of $0.40078546908089274$ to the total number of DNFs. Again, the improvement is only marginal, but it still adds to the total predictive power of the model.
+where $TGCSM=0$ if $N=1$. The choice of square mean over regular mean was done to somewhat normalize the value, and then the choice to subtract $N$ from the top and bottom of the fraction was done to place values between $0$ and $1$. If $D\neq 1$ then $TGCSM=0$ if $M=N$ and $TGCSM=1$ if $M=1$. In otherwords, TGCSM measures how 'close' the drivers are expected to be when finishing the race. 
+
+To choose the best time gap interval number, we plotted the time gap against the correlation value of TGCSM with that gap to DNFs and ALPC. Using `Time Gap Correlation Testing.ipynb`, we found the best time gap intervals which would optimize the correlation values. These are the results. 
+
+![image](https://github.com/user-attachments/assets/f857646c-6e7c-4846-b003-f29546f19984)
+![image](https://github.com/user-attachments/assets/ea4de4df-9de8-45e5-a8b0-a10f3f48a5e2)
+![image](https://github.com/user-attachments/assets/e492911c-0b86-4d7b-bc7e-1646a6fd5d59)
+
+For the free practice grid we have $\text{time gap ALPC} = 200$ and $\text{time gap DNFs} = 220$. Then, surprisingly, for the qualifying grid we have $\text{time gap ALPC} = 7780$ while $\text{time gap DNFs} = 140$. Finally, for the absolute pace position grid we have $\text{time gap ALPC} = 360$ and $\text{time gap DNFs} = 380$. These are the time gaps which maximize the correlation values, respectively, for each grid. 
+
+We used `Optimizing Weighted Sum for Correlation.ipynb` to get the following weights $-2.41387716\cdot FTGCSM-0.90292397\cdot QTGCSM-0.22131765\cdot paceTGCSM$. Alone each subfeature has a correlation of $<.4$ to the total number of DNFs but the weighted sum has a correlation value of $0.40078546908089274$ to the total number of DNFs. Again, the improvement is only marginal, but it still adds to the total predictive power of the model.
 
 ### Time Gap Statistics
 
