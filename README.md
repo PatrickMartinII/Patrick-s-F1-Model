@@ -36,14 +36,14 @@ One of the downfalls of the previous model was that it only used two features, m
 Here we begin by exploring more possible features for prediction, and then implement a better process for feature selection, only allowing for features which improve the predictive power of the model. We also want to create two models: one to predict the number of DNFs in a race, and then another to predict the ALPC of a race. We will use the predicted values from the DNF model as a feature for the ALPC model. We also explore how different modeling approaches will habdle the data and then choose the approach which will yield the best predictive power. 
 
 ## Model Features
-Below we list out the chosen features for our model and then give an in depth survey for each:
+Below we list out the chosen features for our model and then give an in depth survey for each. The first six features are all continuous data features, while the last four are all categorical data features. 
 
-1. Average Driver Experience on the track (weighted sum)
-2. Average Pit Stop Lap, Number, and Time (weighted sum)
-3. Pre Race Free Practice and Qualifying ALPC (weighted sum)
-4. Total Cumulative Constructor Average Points Earned
-5. Time Gap Cluster Square Mean (weighted sum)
-6. Time Gap Statistics (weighted sum)
+1. [Average Driver Experience on the track (weighted sum)](#Average-Driver-Experience-on-the-track)
+2. [Average Pit Stop Lap, Number, and Time (weighted sum)](#Average-Pit-Stop-Lap,-Number,-and-Time)
+3. [Pre Race ALPC (weighted sum)](#Pre-Race-ALPC)
+4. [Total Cumulative Constructor Average Points Earned](#Total-Cumulative-Constructor-Average-Points-Earned)
+5. [Time Gap Cluster Square Mean (weighted sum)](#Time-Gap-Cluster-Square-Mean)
+6. [Time Gap Statistics (weighted sum)](#Time-Gap-Statistics)
 7. Weather Rain Data
 8. Top Ten Diversity
 9. Circuit Id
@@ -55,7 +55,7 @@ This feature consists of three subfeatures which are then given weights which op
 ### Average Pit Stop Lap, Number, and Time
 The subfeatures are exactly what they are in the name of this feature, but are calculated with a little more nuance than the name would imply. Really, the name should be the average average pit stop lap, number, and time, but the above name was chosen for simplicity. The average driver pit stop lap (ADPSL) is computed by getting the average lap each driver takes a pit stop over their formula one career up to but not including the current race and then averaging that value over all drivers in the current race. The average driver pit stop number (ADPSN) is computed by getting the average number of pit stops a driver takes over their formula one career up to but not including the current race, and then averaging that value over all drivers in the current race. The average driver pit stop time (ADPST) is computed by getting the average time in milliseconds a driver as spent in a pit stop over their formula one career up to but not including the current race, and then averaging that that value over all drivers in the current race. To get the weighted sum for this feature, we used `Optimizing Weighted Sum for Correlation.ipynb` to get the following weights $0.31939236\cdot ADPSL-0.91616087\cdot ADPSN-0.24215237\cdot ADPST$. On their own each subfeature yields a correlation to the number of DNFs $<0.65$ but the wieghted sum yields a correlation to the number of DNFs $0.6730485988533443$, which may only be marginally better but also help to add to the predictive power of the model. 
 
-### Pre Race Practice and Qualifying ALPC
+### Pre Race ALPC
 There are six subfeatures, two for each of the free practice (FP), qualifiying (Q), and absolute pace postion grids (pace). The free practice and qualifying grids were obtained by ordering the drivers by their fastest free practice and qualifying time, respectively. The absolute pace psoition grid is obtained by ordering the drivers by theie fastest time from both the qualifying and free practice times. Then the ALPC and the average absolute position change (PC) are taken for each. The absolute position change for a driver is the absolute value of how many positions they gained/lost and then the average absolute position change for a race is the average of each drivers absolute position change. We used `Optimizing Weighted Sum for Correlation.ipynb` to get the following weights $0.00352239\cdot FALPC+0.01081328\cdot FPC-0.59150955\cdot QALPC+0.74527136\cdot QPC+0.17857424\cdot paceALPC-0.25033767\cdot pacePC$. On thaeir own, each subfeature yields a correlation to the number of DNFs $<0.48$ but the weighted sum yields a correlation to the number of DNFs $0.539780855808356$. 
 
 ### Total Cumulative Constructor Average Points Earned
