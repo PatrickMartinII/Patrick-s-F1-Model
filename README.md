@@ -36,7 +36,7 @@ One of the downfalls of the previous model was that it only used two features, m
 Here we begin by exploring more possible features for prediction, and then implement a better process for feature selection, only allowing for features which improve the predictive power of the model. We also want to create two models: one to predict the number of DNFs in a race, and then another to predict the ALPC of a race. We will use the predicted values from the DNF model as a feature for the ALPC model. We also explore how different modeling approaches will habdle the data and then choose the approach which will yield the best predictive power. 
 
 ## Model Features
-Below we list out the chosen features for our model and then give an in depth survey for each. The first six features are all continuous data features, while the last four are all categorical data features. 
+Below we list out the chosen features for our model and then give an in depth survey for each. The first six features are all continuous data features, while the last three are all categorical data features. 
 
 1. [Average Driver Experience on the track (weighted sum)](#Average-Driver-Experience-on-the-track)
 2. [Average Pit Stop Lap, Number, and Time (weighted sum)](#Average-Pit-Stop-Lap,-Number,-and-Time)
@@ -44,10 +44,9 @@ Below we list out the chosen features for our model and then give an in depth su
 4. [Total Cumulative Constructor Average Points Earned](#Total-Cumulative-Constructor-Average-Points-Earned)
 5. [Time Gap Cluster Square Mean (weighted sum)](#Time-Gap-Cluster-Square-Mean)
 6. [Time Gap Statistics (weighted sum)](#Time-Gap-Statistics)
-7. Weather Rain Data
-8. Top Ten Diversity
-9. Circuit Id
-10. Counry of the Race
+7. [Top Ten Diversity](#Top-Ten-Diversity)
+8. [Circuit ID](#Circuit-ID)
+9. [Country of the Race](#Country-of-the-Race)
 
 ### Average Driver Experience on the track
 This feature consists of three subfeatures which are then given weights which optimize their sum for correlation: (1) the average driver race count (ADRC), the average cumulative racer points (ACRP), and the average driver experience in years (ADEY). Each is computed for each race, and is also exactly what it sounds like it would be. ADRC is computed by getting first the total number of races a driver has participated in over their formula one career up to but not including the current race, and then averaging over all drivers participating in the current race. ACRP is achieved in a similar manner, by getting first the total number of points a driver has earned over their formula one career up to but not including the current race, and then averaging out over all drivers participating in the current race. Lastly, ADEY is computed by garnering the total number of years a driver as been racing over their formula one career up to but not including the current year of the current race, and then averaging out over all drivers in the current race. Then to get the Average Driver Experience on the track, we use `Optimizing Weighted Sum for Correlation.ipynb` to get the following formula 
@@ -59,16 +58,16 @@ On their own each subfeature yields a correlation to the DNF data $<0.7$ while t
 ### Average Pit Stop Lap, Number, and Time
 The subfeatures are exactly what they are in the name of this feature, but are calculated with a little more nuance than the name would imply. Really, the name should be the average average pit stop lap, number, and time, but the above name was chosen for simplicity. The average driver pit stop lap (ADPSL) is computed by getting the average lap each driver takes a pit stop over their formula one career up to but not including the current race and then averaging that value over all drivers in the current race. The average driver pit stop number (ADPSN) is computed by getting the average number of pit stops a driver takes over their formula one career up to but not including the current race, and then averaging that value over all drivers in the current race. The average driver pit stop time (ADPST) is computed by getting the average time in milliseconds a driver as spent in a pit stop over their formula one career up to but not including the current race, and then averaging that that value over all drivers in the current race. To get the weighted sum for this feature, we used `Optimizing Weighted Sum for Correlation.ipynb` to get the following weights 
 
-$$0.31939236\cdot ADPSL-0.91616087\cdot ADPSN-0.24215237\cdot ADPST.$$
+$$-0.24214759\cdot ADPSL+0.31940806\cdot ADPSN-0.91615667\cdot ADPST.$$
 
 On their own each subfeature yields a correlation to the number of DNFs $<0.65$ but the wieghted sum yields a correlation to the number of DNFs $0.6730485988533443,$ which may only be marginally better but also help to add to the predictive power of the model. 
 
 ### Pre Race ALPC
 There are six subfeatures, two for each of the free practice (FP), qualifiying (Q), and absolute pace postion grids (pace). The free practice and qualifying grids were obtained by ordering the drivers by their fastest free practice and qualifying time, respectively. The absolute pace psoition grid is obtained by ordering the drivers by theie fastest time from both the qualifying and free practice times. Then the ALPC and the average absolute position change (PC) are taken for each. The absolute position change for a driver is the absolute value of how many positions they gained/lost and then the average absolute position change for a race is the average of each drivers absolute position change. We used `Optimizing Weighted Sum for Correlation.ipynb` to get the following weights 
 
-$$0.00510085\cdot FALPC+0.01078092\cdot FPC-0.69859516\cdot QALPC+0.5883576\cdot QPC+0.2928756\cdot paceALPC-0.28263362\cdot pacePC.$$
+$$0.00514474\cdot FALPC+0.01086802\cdot FPC-0.69783557\cdot QALPC+0.58691877\cdot QPC+0.29529604\cdot paceALPC-0.28496937\cdot pacePC.$$
 
-On thaeir own, each subfeature yields a correlation to the number of DNFs $<0.48$ but the weighted sum yields a correlation to the number of DNFs $0.5397808558129348.$ 
+On thaeir own, each subfeature yields a correlation to the number of DNFs $<0.48$ but the weighted sum yields a correlation to the number of DNFs $0.5397808558195485.$ 
 
 ### Total Cumulative Constructor Average Points Earned
 The total cumulative constructor average points earned (TCCAPE) is computed by first calculating the total number of points that a constructor has earned through all their drivers in the current season up to but not including the current race, then for each race the TCCAPE is gotten by averaging out that value over all constructors participating in the current race. The TCCAPE exhibits a correlation value of $-0.513920$ to the number of DNFs in a race. 
@@ -90,9 +89,40 @@ For the free practice grid we have $I_{ALPC} = 200$ and $I_{DNF} = 220.$ Then, s
 
 We used `Optimizing Weighted Sum for Correlation.ipynb` to get the following weights 
 
-$$-2.41387716\cdot FTGCSM-0.90292397\cdot QTGCSM-0.22131765\cdot paceTGCSM.$$ 
+$$-0.93340429\cdot FTGCSM-0.34852292\cdot QTGCSM-0.08537102\cdot paceTGCSM.$$ 
 
-Alone each subfeature has a correlation of $<.4$ to the total number of DNFs but the weighted sum has a correlation value of $0.40078546908089274$ to the total number of DNFs. Again, the improvement is only marginal, but it still adds to the total predictive power of the model.
+Alone each subfeature has a correlation of $<.4$ to the total number of DNFs but the weighted sum has a correlation value of $0.4009029995634536$ to the total number of DNFs. Again, the improvement is only marginal, but it still adds to the total predictive power of the model.
 
 ### Time Gap Statistics
+Again we use the free practice (FP), qualifying (Q), and absolute pace position (pace) grids and look at the actual time gaps between each driver in these grids. Once we get a list of the time gaps for each race, we find the statistics for each grid (mean, median, standard deviation, variance) and the sum of the gaps between the first ten drivers in the grid. We then get a weighted sum of the statistics for each grid which maximized correlation: free practice stats weighted sum (FPSWS), qualifying stats weighted sum (QSWS), and the absolute pace position weighted sum (APPSWS). Once we get each of these values for each race, we then take another weighted sum of the weighted sums to maximize correlation value. Using `Optimizing Weighted Sum for Correlation.ipynb` we get the following weights 
 
+$$0.51820936\cdot FPSWS-0.3706651\cdot QSWS+0.77075706\cdot APPSWS.$$
+
+On their own each subfeature yields correlation values to the number of DNFs $<0.5003$ while the weighted sum yeilds a correlation value of $0.5387701704389778$.
+
+### Top Ten Diversity
+Which is exactly what it sounds like. We take the top ten drivers in the starting grid of a race and count how many different constructors are represented within the top ten starting drivers. We used `predictor testing.ipynb` to garner the following statistics when comparing agains the number of DNFs:
+
+* $F\text{-statistic} = 3.602885940319581$
+* $p\text{ value} = 0.0064373789382687506$
+* $\eta^2 = 0.0201726076336946.$
+
+Although the $\eta^2$ implies a relatively small effect size, the $F$-statistic shows moderate variance between groups and the $p$ value shows strong statistical significance. This is the reason we chose to include this as a feature to the DNF model. 
+
+### Circuit ID
+Looking at the stats for each circuit, we get the following results using `predictor testing.ipynb` when comparing against the number of DNFs:
+
+* $F\text{-statistic} = 5.533569261680306$
+* $p\text{ value} = 1.0887569928328795\times 10^{-25}$
+* $\eta^2 = 0.2882031909571808.$
+
+Although the $F$-statistic only shows moderate variance between groups, the $p$ value and $\eta^2$ show just how important this feature is when it comes to predicting DNFs. The $p$ value is way beyond the threshold for major statistical significance, while the $\eta^2$ shows that this feature alone can account for over $25\%$ of the variance. These strong statistical values heavily imply that this categorical feature is a necessity for any model trying to predict the number of DNFs in a race. 
+
+### Country of the Race
+This categorical feature is, again, self-explanatory. We use `predictor testing.ipynb` to get the following statistics when comparing against the number of DNFs:
+
+* $F\text{-statistic} = 4.215860892494897$
+* $p\text{ value} = 1.9813247453103664\times 10^{-12}$
+* $\eta^2 = 0.1580008072004169.$
+
+Again, the $F$-statistic only shows moderate variance between groups. Yet, similar to the Circuit ID feature, the Country of the Race exhibits a massively strong $p$ value which is again way beyond the threshold for statistical significance while also exhibiting a strong $\eta^2$ value which shows that this feature accounts for roughly $15\%$ of the variance. 
