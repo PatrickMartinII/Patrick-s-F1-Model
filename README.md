@@ -5,7 +5,9 @@ A continuation of the Erdos Institute Data Science Boot Camp project https://git
 1. [Introduction](#Introduction)
 2. [Previous Results](#Previous-Results)
 3. [Changes to the Model](#Changes-to-the-Model)
-4. [Model Features](#Model-Features)
+4. [Potential Model Features](#Model-Features)
+5. [Feature Analysis and Selection](#Feature-Analysis-and-Selection)
+6. [Model Testing](#Model-Testing)
 
 ## Introduction
 Formula One races are exciting and many people come from all over in order to witness the high-speed stakes on the racet track! Our goal in the summer boot camp was to try quantify what 'excitment' could mean for a formula one race, and then use the recorded data from past races to try and come up with a model for predicting this excitement value. This information could be valuable to stakeholders in the formula one world: knowing which races could be exciting or not can lead to better marketing strategies, and can also give significant insights to each team and their drivers on what to expect from a race. 
@@ -35,8 +37,8 @@ One of the downfalls of the previous model was that it only used two features, m
 
 Here we begin by exploring more possible features for prediction, and then implement a better process for feature selection, only allowing for features which improve the predictive power of the model. We also want to create two models: one to predict the number of DNFs in a race, and then another to predict the ALPC of a race. We will use the predicted values from the DNF model as a feature for the ALPC model. We also explore how different modeling approaches will habdle the data and then choose the approach which will yield the best predictive power. 
 
-## Model Features
-Below we list out the chosen features for our model and then give an in depth survey for each. The first six features are all continuous data features, while the last three are all categorical data features. 
+## Potential Model Features
+Below we list out the chosen potential features for our model and then give an in depth survey for each. The first six features are all continuous data features, while the last three are all categorical data features. 
 
 1. [Average Driver Experience on the track (weighted sum)](#Average-Driver-Experience-on-the-track)
 2. [Average Pit Stop Lap, Number, and Time (weighted sum)](#Average-Pit-Stop-Lap,-Number,-and-Time)
@@ -126,3 +128,80 @@ This categorical feature is, again, self-explanatory. We use `predictor testing.
 * $\eta^2 = 0.1580008072004169.$
 
 Again, the $F$-statistic only shows moderate variance between groups. Yet, similar to the Circuit ID feature, the Country of the Race exhibits a massively strong $p$ value which is again way beyond the threshold for statistical significance while also exhibiting a strong $\eta^2$ value which shows that this feature accounts for roughly $15\%$ of the variance. 
+
+## Feature Analysis and Selection
+First we look at the correlation of the features between themselves to make sure no features are colinear. Below is a heatmap of the correlation values when compared against each other.
+
+![image](https://github.com/user-attachments/assets/6c9a225f-0334-4463-9057-f0b09a8b667d)
+
+The biggest culprit for colinearity is the Average Driver Experience on the track. This feature correlates heavily with the Average Pit Stop feature, the Time Gap Statistics feature, and the TCCAPE feature. The following VIF chart also confirms this, showing that our Average Driver Experience feature is the feature with the most dangerous VIF value. 
+
+![image](https://github.com/user-attachments/assets/f171141f-8a4d-4b9f-9b86-4cba6530898b)
+
+However, we do not want to drop this feature, since it is our feature with the strongest correlation to the number of DNFs. When testing the features with a Random Forest model, we also see that the Average Driver Experience contributes heavily to the model with the strongest SHAP values as seen in the table below. 
+
+![image](https://github.com/user-attachments/assets/1d1364ae-5aae-44cf-915c-fd174fb46f20)
+
+Thus, out best bet is to combine this feature with another feature. Using the `Optimizing Weighted Sum for Correlation.ipynb`, we find that the best way to increase our predictive power while also avoiding colinearity is to combine the Average Driver Experience (ADE) with Time Gap Statistics (TGS). This gets us what we will call the *Complete Average Driver Experience*. The formula is as follows:
+
+$$0.77186024\cdot ADE+0.63579224\cdot TGS.$$
+
+This gets a new correlation value of $0.7857751712228391$ with the total number of DNFs. However, it's here that we run into a major issue. When testing with different predictive models, using this new feature actually diminishes predictive power. In the previous models, we were getting $r^2$ values consistently $>0.66$. After introducing the new feature, the model consistently had $r^2$ values of $<0.64$. Therefore, we conclude that it is actually better to sacrifice less collinearity for more predictive power, and we keep the original features even though they may correlate heavily with one another. 
+
+## Model Testing
+The pattern for model testing went like this: we plug in the features, generate the model without any tuned hyperparameters, and then use the `GridSeach()` method to optimize the model with the best tuned hyperparameters. In each model type, we look at the learning curves for training and validation sets and then compare. Our goal is to get a model which will consistently learn better as more data is included, and which minimizes the train-validation learning gap. These are the different models we tested:
+
+1. [DNF Model](#DNF-Model)
+   * [Random Forest](#Random-Forest)
+   * [Light GBM](#Light-GBM)
+   * [Gradient Boosting](#Gradient-Boosting)
+   * [Stacked with MLP Meta](#Stacked-with-MLP-Meta)
+   * [Stacked with XGBoost Meta](#Stacked-with-XGBoost-Meta)
+   * [Stacked with Elastic Net Meta](#Stacked-with-Elastic-Net-Meta)
+   * [Stacked with Ridge CV Meta](#Stacked-with-Ridge-CV-Meta)
+   * [Conclusion](#Conclusion)
+2. [ALPC Model](#ALPC-Model)
+
+### DNF Model
+For the DNF model we use all nine features. We begin with single model methods: Random Forest, Light GBM, and Gradient Boosting. After tuning the hyperparameters of each and optimizing for the best $r^2$ value, we then stack all three models for the best possible predictive power and then test with different meta models. After tuning the hyperparameters of each meta model, we end on one optimized stacked model. 
+
+Each chart for the lunring curves has the validation curve plotted against the training curve, with the shaded area representing the variance of the $r^2$ of the model for that amount of data. 
+
+#### Random Forest
+The Random Forest model as the first model we tested for demonstrated promise, as the $r^2$ values were relatively high with the training $r^2$ reaching $\approx 0.85$ and having a narrowing variation band, while the validation $r^2$ values reached $\approx 0.69$ stopping just shy of $0.7$. However, the variance band for the validation curve remained high all throughout the curve, and even seems to increse with more data. Another downfall of this model is the training-validation learning gap which remained at a steady $0.16$ throughout no matter the training set size. 
+
+![image](https://github.com/user-attachments/assets/78f53fd8-f15d-44a3-b8e8-079de3d7d8b4)
+
+#### Light GBM
+The Light GBM model shows massive improvements over the Random Tree model. The first notable difference is the drop in trainingn $r^2$ values which decrease from $0.85$ to $\approx 0.775$ with a narrowing variance band. However, the validation curve stays roughly the same exhibiting similar performance plateauing at an $r^2$ value of around $\approx 0.69$, again just shy of $0.7$, with a relatively large variance band which persists throughout the training set size. This model shines with the smallest learning gap being $<0.1$, showing that the Light GBM model performs well to unseen data. 
+
+![image](https://github.com/user-attachments/assets/96ebd8e6-7625-42c0-be3f-9437d32ba7a1)
+
+#### Gradient Boosting 
+The Gradient Boosting model performed similarly to the Light GBM model but with a few key differences. The training curve begins at $0.9$ and only decreases to a value of $\approx 0.8$, which leaves us with a larger learning gap since the validation curve behaves roughly the same as the one in the Light GBM model. 
+
+![image](https://github.com/user-attachments/assets/294bf819-3b77-421d-b633-1e92040293c5)
+
+#### Stacked with MLP Meta
+First we tried stacking the previous models with the MLP as the meta model. This however, was not the ideal. The learning curves ended up jagged which indicates some instability with this model. There are also no real improvements to the $r^2$ values. 
+
+![image](https://github.com/user-attachments/assets/377956f4-c638-4958-9d81-d3fa8c633fe4)
+
+#### Stacked with XGBoost Meta
+The XGBoosted model performed somewhat better than the MLP model, still exhibiting a jagged like curve behavior, but not as severe. The learning gap size is also a key benefit to this model, being the second smallest gap afer the Light GBM model. However, the variatiance bands are still quite large here.
+
+![image](https://github.com/user-attachments/assets/32307a1f-7afe-43c9-b58d-48e31570ddab)
+
+#### Stacked with Elastic Net
+Here we have the best performing model so far, with the highest validation $r^2$ value and the third smallest learning gap. The training curve also deceases showing that the model doesn't overfit to the training data. The only pitfall of this model is how jagged the curve remains to be, indicating some slight instability with the learning.
+
+![image](https://github.com/user-attachments/assets/35f372e6-5f60-46ec-a89d-04a676b7d606)
+
+#### Stacked with Ridge CV
+The stacked model with Ridge CV as the meta model performs excellently, smoothing out those jagged edges that were prominent in every other stacked model. This model learns consistently, and ends with a high validation $r^2$ of $\approx 0.705$ and a decreasing learning gap $<0.1$. This model shows promise, asthe validation $r^2$ values are still increasing with more data. 
+
+![image](https://github.com/user-attachments/assets/d7a53dc7-2c58-46dc-9d13-2f2bae29d927)
+
+#### Conclusion 
+Out of all the models, the stacked model with Ridge CV as the meta model shines as the key model to use for predicting DNFs. This model had the highest validation $r^2$, shows minimal signs of overfitting, exhibits learning stability, and will close the learning gap as more data is gathered.
+
